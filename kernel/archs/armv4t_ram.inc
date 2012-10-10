@@ -25,7 +25,6 @@ begin
    sp^.spsr := $60000050;
    sp^.r0 := ptruint(thread.data);
    sp^.lr := ptruint(thread.entry)+4;
-   //sp^.pc := ptruint(thread.entry);
    sp^.ulr := ptruint(@ThreadExit);
    sp^.sp := ptruint(Thread.MachineContext);
 
@@ -70,29 +69,6 @@ begin
    GetPC := ptruint(PContext(context)^.lr)-4;
 end;
 
-procedure SwiHandler; assembler; nostackframe; [public, alias: 'SwiHandler'];
-asm
-   stmfd sp!, {r14}
-   stmfd sp!, {r0-r3, r7-r12, lr}
-
-   mrs r0, spsr
-   //msr cpsr_c, #(3<<6) | 0x13
-   stmfd sp!, {r0}
-
-   stmfd sp!, {r4-r6}
-
-   mov r0, sp
-   bl PlatformInterrupt
-   mov sp, r0
-
-   ldmfd sp!, {r4-r6}^
-
-   ldmfd sp!, {r0}
-   msr spsr_cxsf, r0
-
-   ldmfd sp!, {r0-r3, r7-r12, lr, pc}^
-end;
-
 procedure IrqHandler; assembler; nostackframe; [public, alias: 'IrqHandler'];
 asm
    stmia r13, {r4-r6}
@@ -109,10 +85,11 @@ asm
    stmfd sp!, {r4-r6}
 
    ldr r5, [sp, #16*4]
-   subs r5, r5, #8
+   ldr r6, .LAtomicCompareExchange
+   subs r5, r5, r6
    ble .Lnofix
    cmp r5, #0xC
-   movle r5, #8
+   addle r5, r6, #4
    strle r5, [sp, #16*4]
 .Lnofix:
 
@@ -137,6 +114,8 @@ asm
    ldmfd sp!, {r0-r3, r7-r12, r13, lr}^
    add sp, #4
    subs pc, lr, #4
+.LAtomicCompareExchange:
+   .long AtomicCompareExchange
 end;
 
 procedure mainfunc; external name 'PASCALMAIN';
@@ -153,13 +132,15 @@ var
  __bss_start: record end; external name '__bss_start';
  __bss_end: record end;   external name '__bss_end';
 
+procedure mmu_utility; external name 'mmu_utility';
+
 procedure Vectors; [public, alias: '_START']; assembler; nostackframe;
 label startup, AtomicCompareExchange;
 asm
    .init
    b startup      // Reset
    b startup      // Undefined instruction
-   b SwiHandler   // SWI
+   b startup      // SWI
    b startup      // Prefetch abort
    b startup      // Data abort
    nop
@@ -176,8 +157,10 @@ AtomicCompareExchange:
    bx lr
 
    .text
+   .globl startup
 startup:
-   mov r2, MemTop
+   ldr r2, .LMemTop
+   mov sp, r2
 
    ldr r0, .Lbss_start
    ldr r1, .Lbss_end
@@ -207,7 +190,7 @@ startup:
    bic r1, r1, #(1<<7)
    msr cpsr_c, r1
    ldr sp, .Lmainstack
-
+   
    b mainfunc
 .Lbss_start:
    .long __bss_start
@@ -217,5 +200,7 @@ startup:
    .long irqsave
 .Lmainstack:
    .long mainThreadStack+MainThreadStackSize
+.LMemTop:
+   .long MemTop
 end;
 {$endif}

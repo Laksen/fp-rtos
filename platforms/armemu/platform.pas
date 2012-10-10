@@ -7,8 +7,6 @@ uses memmap;
 const
  MemTop = memmap.MAINMEM_SIZE;
 
-procedure PlatformInit;
-
 function PlatformInterrupt(p: pointer): pointer;
 
 implementation

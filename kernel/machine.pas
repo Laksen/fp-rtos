@@ -10,10 +10,12 @@ type
 {$define context}
 {$ifdef cpuarm}
    {$ifdef CPUARMV7M}
-      {$i cortexm3.inc}
+      {$i armv7m.inc}
    {$endif}
    {$ifdef CPUARMV4T}
-      {$i armv4t.inc}
+      {$ifdef RAMONLY}
+         {$i armv4t_ram.inc}
+      {$endif}
    {$endif}
 {$endif}
 {$undef context}
@@ -22,10 +24,12 @@ type
 {$define interface}
 {$ifdef cpuarm}
    {$ifdef CPUARMV7M}
-      {$i cortexm3.inc}
+      {$i armv7m.inc}
    {$endif}
    {$ifdef CPUARMV4T}
-      {$i armv4t.inc}
+      {$ifdef RAMONLY}
+         {$i armv4t_ram.inc}
+      {$endif}
    {$endif}
 {$endif}
 {$undef interface}
@@ -46,10 +50,12 @@ uses scheduler, platform;
 {$define implementation}
 {$ifdef cpuarm}
    {$ifdef CPUARMV7M}
-      {$i cortexm3.inc}
+      {$i armv7m.inc}
    {$endif}
    {$ifdef CPUARMV4T}
-      {$i armv4t.inc}
+      {$ifdef RAMONLY}
+         {$i armv4t_ram.inc}
+      {$endif}
    {$endif}
 {$endif}
 
