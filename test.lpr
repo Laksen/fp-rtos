@@ -74,6 +74,7 @@ var t1, t2, t3, t4: TThread;
     s1, s2, s3, s4: array[0..127*4] of longword;
     qb: array[0..15] of longword;
     data: longword;
+    t: Pthread;
 begin
    CreateStaticQueue(q, 16, 4, qb[0], qoDiscard);
    CreateMutex(m);
@@ -87,17 +88,18 @@ begin
    CreateThread(t4, 2, @DbThread, nil,nil, sizeof(s4), true);
 
    DebugStr('Added threads'#13#10);
+   
+   enablescheduling;
 
-   //while true do
+   while true do
    begin
       LockMutex(m);
-      {DebugStr('Popping: ');
-      while Pop(q, data) do
-         DebugInt(data);
-      DebugLn;  }
+      DebugStr('Popping: ');
+      while Pop(q, data) do DebugInt(data);
+      DebugLn;
       UnlockMutex(m);
-
-      sleep(5000);
+      
+      sleep(1000);
    end;
 end.
 

@@ -2,7 +2,7 @@ unit machine;
 
 interface
 
-uses config, threads;
+uses config, threads, debug;
 
 type
  PContext = ^TContext;

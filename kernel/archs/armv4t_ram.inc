@@ -27,6 +27,8 @@ begin
    sp^.lr := ptruint(thread.entry)+4;
    sp^.ulr := ptruint(@ThreadExit);
    sp^.sp := ptruint(Thread.MachineContext);
+   
+   //debugstr('Thread: '); debughex(ptruint(sp)); debugstr(' '); debughex(ptruint(sp^.ulr)); debugstr(' '); debughex(ptruint(sp^.lr)); debugln();
 
    thread.machineContext := sp;
 end;
@@ -134,18 +136,30 @@ var
 
 procedure mmu_utility; external name 'mmu_utility';
 
+procedure UndefinedInstrHandler; external name 'UndefinedInstrHandler';
+procedure SWIHandler; external name 'SWIHandler';
+procedure PrefetchAbortHandler; external name 'PrefetchAbortHandler';
+procedure DataAbortHandler; external name 'DataAbortHandler';
+procedure FIQHandler; external name 'FIQHandler';
+  
+procedure DefaultExceptionHandler; assembler; nostackframe;
+asm
+.Lloop:
+   b .Lloop
+end;
+
 procedure Vectors; [public, alias: '_START']; assembler; nostackframe;
 label startup, AtomicCompareExchange;
 asm
    .init
-   b startup      // Reset
-   b startup      // Undefined instruction
-   b startup      // SWI
-   b startup      // Prefetch abort
-   b startup      // Data abort
-   nop
-   b IrqHandler
-   subs pc,lr,#4  // FIQ handler
+   ldr pc, .L_start
+   ldr pc, .LUndefined_Addr  // Undefined Instruction vector
+   ldr pc, .LSWI_Addr        // Software Interrupt vector
+   ldr pc, .LPrefetch_Addr   // Prefetch abort vector
+   ldr pc, .LAbort_Addr      // Data abort vector
+   nop                   // reserved
+   ldr pc, .LIRQ_Addr        // Interrupt Request (IRQ) vector
+   ldr pc, .LFIQ_Addr        // Fast interrupt request (FIQ) vector
 
 // 0x00000008:
    .globl AtomicCompareExchange
@@ -155,6 +169,33 @@ AtomicCompareExchange:
    streq r2, [r0]
    mov r0, r3
    bx lr
+   
+.L_start:
+   .long startup
+.LUndefined_Addr:
+   .long UndefinedInstrHandler
+.LSWI_Addr:
+   .long SWIHandler
+.LPrefetch_Addr:
+   .long PrefetchAbortHandler
+.LAbort_Addr:
+   .long DataAbortHandler
+.LIRQ_Addr:
+   .long IRQHandler
+.LFIQ_Addr:
+   .long FIQHandler
+
+   .weak UndefinedInstrHandler
+   .weak SWIHandler
+   .weak PrefetchAbortHandler
+   .weak DataAbortHandler
+   .weak FIQHandler
+
+   .set UndefinedInstrHandler, DefaultExceptionHandler
+   .set SWIHandler, DefaultExceptionHandler
+   .set PrefetchAbortHandler, DefaultExceptionHandler
+   .set DataAbortHandler, DefaultExceptionHandler
+   .set FIQHandler, DefaultExceptionHandler
 
    .text
    .globl startup
@@ -169,24 +210,28 @@ startup:
    str r3, [r0], #4
    cmp r0, r1
    blt .Lbssloop
+   
+   mov r2, sp
 
-   mrs r0, cpsr
-   bic r0, #0x1F
-   orr r0, #3 << 6
-
-   orr r1, r0, #0x12 // IRQ
+   mrs r4, cpsr
+   bic r4, #0x1F
+   orr r4, #3 << 6
+   
+   orr r1, r4, #0x12 // IRQ
    msr cpsr_c, r1
    ldr sp, .Lirqsave
 
-   orr r1, r0, #0x11
+   orr r1, r4, #0x11 // FIQ
    msr cpsr_c, r1
    mov sp, r2
 
-   orr r1, r0, #0x13
+   orr r1, r4, #0x13 // Supervisor
    msr cpsr_c, r1
    mov sp, r2
-
-   orr r1, r0, #0x10
+   
+   bl mmu_utility
+   
+   orr r1, r4, #0x10 // User
    bic r1, r1, #(1<<7)
    msr cpsr_c, r1
    ldr sp, .Lmainstack

@@ -1,0 +1,1 @@
+fpc -Parm -Tembedded -O3 XX  -k"-T platforms/freerunner/freerunner.ld" -Mfpc -Scgi -vewnh -Fikernel/archs -Fukernel -Fuutils;cpu/sc3244x;arch/arm;platforms/freerunner -Fu. -FUlib/arm-embedded/ -Cparmv4t -Cfsoft -dRAMONLY -k"-Map omg.map" test.lpr

@@ -1,1 +1,2 @@
-fpc -Parm -Tembedded -O3 XX  -k"-T platforms/armemu/system-onesegment.ld" -Mfpc -Scgi -vewnhi -Fikernel\archs -Fukernel -Fuplatforms\armemu -Fu. -FUlib\arm-embedded\ -l -Cparmv4t -Cfnone test
+fpc -B -Parm -Tembedded -O- XX  -k"-T platforms/armemu/system-onesegment.ld" -Mfpc -Scgi -vewnhi -Fikernel/archs -Fukernel -Fuarch/arm -Fuplatforms/armemu -Fu. -FUlib/arm-embedded/ -Cparmv4t -Cfsoft -dRAMONLY -k"-Map omg.map" test.lpr
+arm-embedded-objcopy -O binary test.elf test.bin

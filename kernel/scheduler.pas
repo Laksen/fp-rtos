@@ -8,6 +8,7 @@ var CurrentThread: PThread;
 
 procedure DisableScheduling;
 procedure EnableScheduling;
+function ScheduleLevel: longint;
 
 procedure AddThread(var T: TThread);
 procedure RemoveThread(var T: TThread);
@@ -30,6 +31,11 @@ var Scheduling: longint;
 
     IdleThread: TThread;
     IdleStack: array[0..31] of longword;
+
+function ScheduleLevel: longint;
+begin
+   ScheduleLevel := Scheduling
+end;
 
 procedure DisableScheduling; inline;
 begin
@@ -108,7 +114,8 @@ begin
       end
       else
          Schedule := s;
-      //debugstr('Scheduling '); DebugHex(ptruint(new)); debugstr(' MC '); DebugHex(ptruint(old)); debugln;
+        
+      //debugstr('Scheduling '); if new <> nil then DebugHex(getpc(new^.machinecontext)); debugstr(' MC '); if old <> nil then DebugHex(getpc(old^.machinecontext)); debugln;
    end
    else
       Schedule := s;
@@ -180,7 +187,7 @@ initialization
    CreateMainThread;
    ExitProc := @MainthreadExit;
    CreateThread(IdleThread, 0, @ThreadIdle, nil, @IdleStack[0], sizeof(IdleStack), true);
-   EnableScheduling;
+   //EnableScheduling;
 
 end.
 

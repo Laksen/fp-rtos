@@ -4,7 +4,7 @@ OUTPUT_ARCH(arm)
 ENTRY(_START)
 SECTIONS
 {
-	. = 0; /* %MEMBASE%; */
+	. = 0x000000; /* %MEMBASE%; */
 
 	/* text/read-only data */
 	.text :	{ KEEP(*(.init, .init.*)) *(.text .text.* .glue_7* .gnu.linkonce.t.*) } =0x9090
@@ -70,6 +70,10 @@ SECTIONS
 	__bss_start = .;
 	.bss : { *(.bss .bss.*) }
 
+   . = ALIGN(0x4000);
+   ARM_MMU_TranslationTable = .;
+   . = ARM_MMU_TranslationTable + 0x4000;
+   
 	. = ALIGN(4); 
 	__bss_end = .;
 	_end = .;
