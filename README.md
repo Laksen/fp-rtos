@@ -3,4 +3,4 @@ fp-rtos
 
 fp-rtos is a realtime OS for embedded systems written in freepascal.
 
-It currently uses functionality of the freepascal compiler only available in the branches/laksen/arm-embedded branch.
+It should compile with any recent trunk version of an arm-embedded FPC compiler.
