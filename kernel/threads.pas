@@ -12,7 +12,7 @@ type
                  tsWaiting,    // Thread is waiting for something
                  tsTerminated  // Thread has exited
                 );
- TThreadPriority = 0..4; // Higher means more important
+ TThreadPriority = 0..ThreadPriorityLevels-1; // Higher means more important
 
  TThreadProc = procedure(Parameter: Pointer);
 
@@ -20,7 +20,7 @@ type
 
  PThread = ^TThread;
  TThread = record
-  ThreadID: longint;
+  ThreadID: sizeint;
   State: TThreadState;
   Priority,
   StoredPriority: TThreadPriority;
@@ -38,13 +38,13 @@ type
 
   case TWaitType of
    wtMutex, wtSignal: (WaitingFor: Pointer);
-   wtTimeout: (WaitTime: longint);
+   wtTimeout: (WaitTime: LongInt);
  end;
 
 var MainThread: TThread;
     ThreadList: PThread = @MainThread;
 
-procedure CreateThread(var Thread: TThread; Priority: TThreadPriority; EntryPoint: TThreadProc; Parameter: Pointer; Stack: pointer; StackSize: longint; StartActive: boolean);
+procedure CreateThread(var Thread: TThread; Priority: TThreadPriority; EntryPoint: TThreadProc; Parameter: Pointer; Stack: pointer; StackSize: sizeint; StartActive: boolean);
 procedure DestroyThread(var Thread: TThread);
 procedure ResumeThread(var Thread: TThread);
 procedure SuspendThread(var Thread: TThread);
@@ -56,9 +56,9 @@ implementation
 
 uses heap, scheduler, machine;
 
-var ThreadCounter: longint;
+var ThreadCounter: sizeint;
 
-procedure CreateThread(var Thread: TThread; Priority: TThreadPriority; EntryPoint: TThreadProc; Parameter: Pointer; Stack: pointer; StackSize: longint; StartActive: boolean);
+procedure CreateThread(var Thread: TThread; Priority: TThreadPriority; EntryPoint: TThreadProc; Parameter: Pointer; Stack: pointer; StackSize: sizeint; StartActive: boolean);
 begin
    Thread.ThreadID := ThreadCounter; inc(ThreadCounter);
    Thread.State := tsSuspended;
@@ -78,7 +78,7 @@ begin
    else
       thread.AllocStack := nil;
 
-   thread.MachineContext := pointer(ptruint(Stack)+StackSize);
+   thread.MachineContext := @pbyte(Stack)[StackSize];
 
    InitializeThread(thread);
 

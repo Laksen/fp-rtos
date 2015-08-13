@@ -3,11 +3,6 @@ unit kernel;
 interface
 
 type
- TScheduling = (saRoundRobin,
-                saEDF, // Earliest deadline first
-                saLST, // Least slack time
-                saRMS);// Rate-monotonic scheduling
-
  TErrorType = (etMissedDeadline,
                etDeadlock,
                etWrongMutexAccess,
@@ -26,11 +21,11 @@ procedure EmptyHandler(ErrorType: TErrorType; Thread: Pointer);
 var
  ErrorHandler: TErrorHandler = @EmptyHandler;
 
-procedure PlatformTick(ms: longint);
+procedure PlatformTick(ms: sizeint);
 
 implementation
 
-uses config, debug, delays;
+uses debug, delays;
 
 procedure EmptyHandler(ErrorType: TErrorType; Thread: Pointer);
 const
@@ -47,7 +42,7 @@ begin
    while true do;
 end;
 
-procedure PlatformTick(ms: longint);
+procedure PlatformTick(ms: sizeint);
 begin
    KernelTick(ms);
 end;

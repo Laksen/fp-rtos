@@ -15,7 +15,8 @@ type
   TotalSize: sizeint;
  end;
 
-var MainHeap: THeapAllocator;
+var
+  MainHeap: THeapAllocator;
 
 procedure CreateHeap(var Heap: THeapAllocator);
 procedure DestroyHeap(var Heap: THeapAllocator);
@@ -27,7 +28,7 @@ procedure FreeMem(var Heap: THeapAllocator; Addr: Pointer; Size: sizeint);
 
 implementation
 
-uses debug;
+uses config;
 
 const
  MinBlock = 16;
@@ -82,7 +83,7 @@ begin
 
       inc(heap.Allocated, AllocSize);
 
-      Freemem(heap, pointer(ptruint(p)+AllocSize), RestSize);
+      Freemem(heap, @pbyte(p)[AllocSize], RestSize);
    end
    else
       GetMem := nil;
@@ -92,7 +93,7 @@ function GetAlignedMem(var Heap: THeapAllocator; Size, Alignment: sizeint): poin
 var mem: Pointer;
     memp: ptruint;
 begin
-   if alignment <= sizeof(pointer) then
+   if (not DataRequiresAlignment) or (alignment <= sizeof(pointer)) then
       GetAlignedMem := GetMem(Heap, size)
    else
    begin
@@ -143,9 +144,6 @@ begin
          heap.Blocks := b;
    end;
 end;
-
-initialization
-   CreateHeap(MainHeap);
 
 end.
 

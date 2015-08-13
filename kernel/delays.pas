@@ -4,78 +4,91 @@ unit delays;
 
 interface
 
-procedure Sleep(ms: longint);
+function GetTickCount: longint;
 
-procedure KernelTick(ms: longint);
+procedure Sleep(ms: Longword);
+
+procedure KernelTick(ms: SizeInt);
 
 implementation
 
-uses scheduler, threads, spinlock, debug;
+uses scheduler, threads, spinlock, config;
 
 var SleepList: PThread;
     SleepListLock: TSpinLock;
-    SleepCounter: longint;
+    ticks: longint;
 
-procedure Sleep(ms: longint);
-var t: PThread;
+function GetTickCount: longint;
 begin
-   t := GetCurrentThread;
-
-   SpinWait(SleepListLock);
-   DisableScheduling;
-   t^.WaitType := wtTimeout;
-   t^.Waitlist := SleepList;
-   t^.WaitTime := SleepCounter+ms;
-   SleepList := t;
-   SpinUnlock(SleepListLock);
-   BlockThread(true);
+   GetTickCount:=ticks;
 end;
 
-procedure KernelTick(ms: longint);
-var prev, t: PThread;
-    cnt: longint;
+procedure Sleep(ms: Longword);
+var t: PThread;
 begin
-   SleepCounter := SleepCounter+ms;
+   if ms=0 then
+   begin
+      yield;
+      exit;
+   end;
    
+   t := GetCurrentThread;
+
+   DisableScheduling;
+   t^.WaitType := wtTimeout;
+   t^.WaitTime := ms;
+
+   SpinWait(SleepListLock);
+   t^.Waitlist := SleepList;
+   SleepList := t;
+   BlockThread(SleepListLock,true);
+end;
+
+var Skip: longint;
+
+procedure KernelTick(ms: SizeInt);
+var prev, t, next: PThread;
+    timeout: sizeint;
+begin
+   inc(ticks,ms);
+
    if SpinWaitFromISR(SleepListLock) then
    begin
-      cnt := SleepCounter;
-
+      inc(ms,Skip);
+      skip:=0;
+      
       t := SleepList;
       prev := nil;
 
-      while assigned(t) do
+      timeout:=0;
+      while assigned(t) and (timeout<MaxThreads) do
       begin
-         if t^.WaitTime <= cnt then
+         inc(timeout);
+
+         next:=t^.Waitlist;
+         if t^.WaitTime <= ms then
          begin
             UnblockThread(t^);
-            if prev = nil then
-            begin
-               SleepList := t^.Waitlist;
-               t := t^.Waitlist;
-            end
+
+            if not assigned(prev) then
+               SleepList := next
             else
-            begin
-               prev^.Waitlist := t^.Waitlist;
-               prev := t;
-               t := t^.Waitlist;
-            end;
+               prev^.Waitlist := next;
          end
          else
          begin
+            dec(t^.WaitTime, ms);
             prev := t;
-            t := t^.Waitlist;
          end;
+
+         t := next;
       end;
 
       SpinUnlock(SleepListLock);
-   end;
+   end
+   else
+      inc(Skip,ms);
 end;
-
-initialization
-   SleepCounter := 0;
-   SleepList := nil;
-   SpinInit(SleepListLock);
 
 end.
 

@@ -2,8 +2,6 @@ unit criticalsection;
 
 interface
 
-uses spinlock;
-
 type
  TCriticalSection = record
  end;

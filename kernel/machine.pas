@@ -2,12 +2,15 @@ unit machine;
 
 interface
 
-uses config, threads, debug;
+uses config, threads;
 
 type
  PContext = ^TContext;
  TContext = record
 {$define context}
+{$ifdef cpuavr}
+   {$i avr.inc}
+{$endif cpuavr}
 {$ifdef cpuarm}
    {$ifdef CPUARMV7M}
       {$i armv7m.inc}
@@ -22,6 +25,9 @@ type
  end;
 
 {$define interface}
+{$ifdef cpuavr}
+   {$i avr.inc}
+{$endif cpuavr}
 {$ifdef cpuarm}
    {$ifdef CPUARMV7M}
       {$i armv7m.inc}
@@ -39,15 +45,18 @@ procedure Yield;
 
 function GetPC(context: Pointer): ptruint;
 
-function AtomicCompareExchange(var Value: longint; ACompare, ANew: longint): longint; external name 'ATOMICCOMPAREEXCHANGE';
-function AtomicIncrement(var value: longint): longint;
-function AtomicDecrement(var value: longint): longint;
+function AtomicCompareExchange(var Value: sizeint; ACompare, ANew: sizeint): sizeint; external name 'ATOMICCOMPAREEXCHANGE';
+function AtomicIncrement(var value: sizeint): sizeint;
+function AtomicDecrement(var value: sizeint): sizeint;
 
 implementation
 
-uses scheduler, platform;
+uses scheduler, platform, debug;
 
 {$define implementation}
+{$ifdef cpuavr}
+   {$i avr.inc}
+{$endif cpuavr}
 {$ifdef cpuarm}
    {$ifdef CPUARMV7M}
       {$i armv7m.inc}

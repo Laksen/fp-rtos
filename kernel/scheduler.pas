@@ -2,13 +2,13 @@ unit scheduler;
 
 interface
 
-uses threads;
+uses threads, spinlock;
 
 var CurrentThread: PThread;
 
 procedure DisableScheduling;
 procedure EnableScheduling;
-function ScheduleLevel: longint;
+function ScheduleLevel: sizeint;
 
 procedure AddThread(var T: TThread);
 procedure RemoveThread(var T: TThread);
@@ -20,19 +20,20 @@ function GetCurrentThread: PThread;
 procedure Yield;
 
 procedure ChangePriority(var T: TThread; NewPriority: TThreadPriority);
+procedure BlockThread(var LockToUnlock: TSpinlock; DoEnableScheduling: boolean);
 procedure BlockThread(DoEnableScheduling: boolean);
 procedure UnblockThread(var T: TThread);
 
 implementation
 
-uses heap, config, runqueue, kernel, debug, machine;
+uses heap, config, runqueue, debug, machine, platform;
 
-var Scheduling: longint;
+var Scheduling: sizeint;
 
     IdleThread: TThread;
-    IdleStack: array[0..31] of longword;
+    IdleStack: array[0..IdleThreadStackSize-1] of byte;
 
-function ScheduleLevel: longint;
+function ScheduleLevel: sizeint;
 begin
    ScheduleLevel := Scheduling
 end;
@@ -50,7 +51,7 @@ end;
 procedure AddThread(var T: TThread);
 begin
    DisableScheduling;
-   EnqueueThread(@t);
+   EnqueueThread(t);
    t.State := tsReady;
    EnableScheduling;
 end;
@@ -58,7 +59,7 @@ end;
 procedure RemoveThread(var T: TThread);
 begin
    DisableScheduling;
-   Runqueue.RemoveThread(@t);
+   Runqueue.RemoveThread(t);
    if @t = CurrentThread then CurrentThread := nil;
    EnableScheduling;
 end;
@@ -92,25 +93,24 @@ begin
    if Scheduling = 1 then
    begin
       old := CurrentThread;
-      if assigned(CurrentThread) then
+      if assigned(old) then
       begin
-         CurrentThread^.MachineContext := s;
-         if CurrentThread^.State = tsRunning then
+         old^.MachineContext := s;
+         if old^.State = tsRunning then
          begin
-            EnqueueThread(CurrentThread);
-            CurrentThread^.State:=tsReady;
+            EnqueueThread(old^);
+            old^.State:=tsReady;
          end
          else
-            CurrentThread := nil;
+            CurrentThread:=nil;
       end;
 
       new := FindNewThread;
-
       if assigned(new) then
       begin
+         new^.State := tsRunning;
          Schedule := new^.MachineContext;
          CurrentThread := new;
-         new^.State := tsRunning;
       end
       else
          Schedule := s;
@@ -133,61 +133,84 @@ end;
 
 procedure ChangePriority(var T: TThread; NewPriority: TThreadPriority);
 begin
-   t.StoredPriority := t.Priority;
-   t.Priority := NewPriority;
+   if t.Priority<>NewPriority then
+   begin
+      if (CurrentThread<>@T) and (t.State=tsReady) then
+      begin
+         DisableScheduling;
+         Runqueue.RemoveThread(t);
+
+         t.Priority := NewPriority;
+
+         Runqueue.EnqueueThread(t);
+         EnableScheduling;
+      end
+      else
+         t.Priority := NewPriority;
+   end;
+end;
+
+procedure BlockThread(var LockToUnlock: TSpinlock; DoEnableScheduling: boolean);
+begin
+   CurrentThread^.State := tsWaiting;
+   SpinUnlock(LockToUnlock);
+   if DoEnableScheduling then EnableScheduling;
+   while CurrentThread^.State = tsWaiting do Yield;
 end;
 
 procedure BlockThread(DoEnableScheduling: boolean);
 begin
    CurrentThread^.State := tsWaiting;
    if DoEnableScheduling then EnableScheduling;
-   Yield;
-   while CurrentThread^.State = tsWaiting do;
+   while CurrentThread^.State = tsWaiting do Yield;
 end;
 
 procedure UnblockThread(var T: TThread);
 begin
    t.State := tsReady;
-   EnqueueThread(@t);
+   EnqueueThread(t);
 end;
 
 procedure ThreadIdle(p: pointer);
-var i: longint;
 begin
-   while true do Yield;
+   while true do PlatformIdle;
 end;
 
 procedure CreateMainThread;
 begin
-   MainThread.ThreadID := -1;
-   MainThread.State := tsRunning;
-   MainThread.Priority := 3;
-   MainThread.StoredPriority := 3;
-   MainThread.ThreadList := nil;
+   if HasMainThread then
+   begin
+      MainThread.ThreadID := -1;
+      MainThread.State := tsRunning;
+      MainThread.Priority := 3;
+      MainThread.StoredPriority := 3;
+      MainThread.ThreadList := nil;
 
-   MainThread.Next := nil;
-   MainThread.Waitlist := nil;
+      MainThread.Next := nil;
+      MainThread.Waitlist := nil;
 
-   MainThread.MachineContext := nil;
+      MainThread.MachineContext := nil;
 
-   CurrentThread := @MainThread;
+      CurrentThread := @MainThread;
+   end;
 end;
 
 procedure MainthreadExit;
 begin
-   DisableScheduling;
-   DestroyThread(MainThread);
-   FreeMem(MainHeap, @MainThreadStack[0], MainThreadStackSize);
-   EnableScheduling;
+   if HasMainThread then
+   begin
+      DisableScheduling;
+      DestroyThread(MainThread);
+      FreeMem(MainHeap, @MainThreadStack[0], MainThreadStackSize);
+      EnableScheduling;
+   end;
    while true do;
 end;
 
 initialization
-   Scheduling := 0;
    CreateMainThread;
    ExitProc := @MainthreadExit;
    CreateThread(IdleThread, 0, @ThreadIdle, nil, @IdleStack[0], sizeof(IdleStack), true);
-   //EnableScheduling;
 
 end.
 

@@ -5,19 +5,32 @@ interface
 uses kernel;
 
 const
- IrqStackSize = 1024;
- MainThreadStackSize = 1024;
+ ThreadPriorityLevels = 5;
 
- DeadlockDetection = true;
+ DataRequiresAlignment = false;
+
+ MaxThreads = 32;
+
+ IrqStackSize = 0;
+ IdleThreadStackSize = 64;
+ MainThreadStackSize = 64;
+ 
+ HasMainThread = false;
+
  PriorityInheritance = true;
- MutexOwnershipCheck = true;
+ MutexOwnershipCheck = false;
  MutexBackOff = true;
 
  SignalPriorityInheritance = true;
 
- ThreadStateValidation = true;
+ DeadlockDetection = false;
+ ThreadStateValidation = false;
 
- Scheduling = saRoundRobin;
+{$ifdef CPUAVR}
+  AVR_InterruptHandler = 'TIMER0_OVF_ISR';
+  
+  FCPU = 1000000;
+{$endif CPUAVR}
 
 implementation
 

@@ -7,81 +7,96 @@ interface
 uses threads;
 
 function PopThread: PThread;
-procedure EnqueueThread(t: PThread);
-procedure RemoveThread(t: PThread);
+procedure EnqueueThread(var t: TThread);
+procedure RemoveThread(var t: TThread);
 
 implementation
 
-var First, Last: PThread;
+uses config;
+
+var First, Last: array[TThreadPriority] of PThread;
 
 function PopThread: PThread;
 var t: PThread;
+    tp: TThreadPriority;
 begin
-   if First = nil then Exit(nil);
+   tp := TThreadPriority(ord(high(TThreadPriority))+1);
 
-   t := First;
+   repeat
+      dec(tp);
 
-   if first = last then
-   begin
-      First := nil;
-      Last := nil;
-   end
-   else
-   begin
-      First := First^.Next;
-      t^.next := nil;
-   end;
+      if First[tp] = nil then
+         continue;
 
-   PopThread := t;
-end;
-
-procedure EnqueueThread(t: PThread);
-begin
-   if last = nil then
-   begin
-      First := t;
-      last := t;
-      t^.Next := nil;
-   end
-   else
-   begin
-      Last^.Next := t;
-      Last := t;
-   end;
-end;
-
-procedure RemoveThread(t: PThread);
-var x: PThread;
-begin
-   if t = first then
-   begin
-      if first = last then
+      t := First[tp];
+      if t = last[tp] then
       begin
-         first := nil;
-         last := nil;
+         First[tp] := nil;
+         Last[tp] := nil;
       end
       else
-         first := first^.Next;
+         First[tp] := t^.Next;
+
+      t^.next := nil;
+
+      exit(t);
+   until tp=low(TThreadPriority);
+
+   exit(nil);
+end;
+
+procedure EnqueueThread(var t: TThread);
+var tp: TThreadPriority;
+  LastTmp: PThread;
+begin
+   tp:=t.Priority;
+
+   LastTmp:=last[tp];
+   if LastTmp = nil then
+      First[tp] := @t
+   else
+      LastTmp^.Next := @t;
+
+   Last[tp] := @t;
+   t.Next:=nil;
+end;
+
+procedure RemoveThread(var t: TThread);
+var x: PThread;
+    tp: TThreadPriority;
+    ft: PThread;
+    timeout: sizeint;
+begin
+   tp:=t.Priority;
+   ft:=first[tp];
+   if @t = ft then
+   begin
+      if ft = last[tp] then
+      begin
+         first[tp] := nil;
+         last[tp] := nil;
+      end
+      else
+         first[tp] := ft^.Next;
    end
    else
    begin
-      x := first;
-      while assigned(x) do
+      x := first[tp];
+      timeout:=0;
+      while assigned(x) and (timeout<MaxThreads) do
       begin
-         if x^.Next = t then
+         inc(timeout);
+
+         if x^.Next = @t then
          begin
-            x^.Next := t^.Next;
-            if last = t then last := x;
+            x^.Next := t.Next;
+            if last[tp] = @t then last[tp] := x;
             exit;
          end;
          x := x^.Next;
       end;
    end;
 end;
-
-initialization
-   First := nil;
-   Last := nil;
 
 end.
 

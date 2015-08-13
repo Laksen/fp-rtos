@@ -55,6 +55,7 @@ begin
          Move(Data, PByte(queue.QueueBuffer)[queue.ElementSize*Queue.Last], Queue.ElementSize);
          Inc(Queue.Last);
          Inc(Queue.First);
+         DoPush:=true;
       end
       else if Full and (Queue.Overflow = qoDiscard) then
       begin

@@ -45,6 +45,7 @@ end;
 
 procedure WaitForSignal(var Signal: TSignal);
 var p,t: PThread;
+   NewPrio: TThreadPriority;
 
    function FindWaitee(Thread: PThread): PThread;
    begin
@@ -84,10 +85,13 @@ begin
       t^.WaitingFor := @Signal;
 
       if SignalPriorityInheritance then
-         ChangePriority(Signal.Owner^, HighestPriority(Signal.Waiting));
+      begin
+         NewPrio:=t^.Priority;
+         if NewPrio>Signal.Owner^.Priority then
+            ChangePriority(Signal.Owner^, NewPrio);
+      end;
 
-      SpinUnlock(Signal.SignalGuard);
-      BlockThread(true);
+      BlockThread(Signal.SignalGuard,true);
    end
    else
    begin

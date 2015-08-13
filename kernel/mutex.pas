@@ -52,6 +52,7 @@ end;
 
 procedure Acquire(var Mutex: TMutex);
 var p,t: PThread;
+    NewPrio: TThreadPriority;
 begin
    DisableScheduling;
 
@@ -78,10 +79,13 @@ begin
       t^.WaitingFor := @Mutex;
 
       if PriorityInheritance then
-         ChangePriority(Mutex.Owner^, HighestPriority(mutex.Waiting));
+      begin
+         NewPrio:=t^.Priority;
+         if NewPrio>Mutex.Owner^.Priority then
+            ChangePriority(Mutex.Owner^, NewPrio);
+      end;
 
-      SpinUnlock(Mutex.MutexGuard);
-      BlockThread(true);
+      BlockThread(Mutex.MutexGuard, true);
    end
    else
    begin
@@ -94,6 +98,7 @@ end;
 
 procedure Release(var Mutex: TMutex);
 var NewOwner: PThread;
+   NewPrio: TThreadPriority;
 begin
    DisableScheduling;
 
@@ -108,6 +113,12 @@ begin
       Mutex.Owner := NewOwner;
       NewOwner^.Waitlist := nil;
       NewOwner^.WaitingFor := nil;
+      if PriorityInheritance then
+      begin
+         NewPrio:=HighestPriority(Mutex.Waiting);
+         if NewPrio>Mutex.Owner^.Priority then
+            ChangePriority(Mutex.Owner^, NewPrio);
+      end;
       UnblockThread(Mutex.Owner^);
    end
    else
