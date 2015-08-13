@@ -3,7 +3,7 @@ unit spinlock;
 interface
 
 type
- TSpinlock = longint;
+ TSpinlock = sizeint;
 
 procedure SpinInit(var Lock: TSpinlock);
 procedure SpinWait(var Lock: TSpinlock);
@@ -25,10 +25,10 @@ end;
 
 procedure SpinWait(var Lock: TSpinlock);
 begin
-   while AtomicCompareExchange(Lock, Spinlock_Locked, Spinlock_Unlocked) = Spinlock_Locked do;
+   while AtomicCompareExchange(Lock, Spinlock_Unlocked, Spinlock_Locked) <> Spinlock_Unlocked do;
 end;
 
-function SpinWaitFromISR(var Lock: TSpinlock): boolean; nostackframe;
+function SpinWaitFromISR(var Lock: TSpinlock): boolean;
 begin
    if Lock = Spinlock_Locked then
       SpinWaitFromISR := false
@@ -39,7 +39,7 @@ begin
    end;
 end;
 
-procedure SpinUnlock(var Lock: TSpinlock); nostackframe;
+procedure SpinUnlock(var Lock: TSpinlock);
 begin
    Lock := Spinlock_Unlocked;
 end;
