@@ -1,2 +1,2 @@
-fpc -B -Parm -Tembedded -O3 XX  -k"-T platforms/rpi/rpi.ld" -Mfpc -Scgi -vewnhi -Fikernel/archs -Fukernel -Fuarch/arm -Fuplatforms/rpi -Fu. -FUlib/arm-embedded/ -Cparmv6 -Cfsoft test.lpr
-arm-embedded-objcopy -O binary test.elf test.bin
+fpc -al -B -Parm -Tembedded -O3 XX  -k"-T platforms/rpi/rpi.ld" -Mfpc -Scgi -vewnhi -Fikernel/archs -Fukernel -Fuarch/arm -Fuplatforms/rpi -Fu. -FUlib/arm-embedded/ -Cparmv6z -Cfsoft -XParm-none-eabi- test.lpr
+arm-none-eabi-objcopy -O binary test.elf test.bin

@@ -73,7 +73,8 @@ asm
    msr cpsr_c, #(3<<6) | 0x13
 
    stmfd sp!, {r5}
-   stmfd sp!, {r0-r3, r7-r12, r13, lr}^
+   stmfd sp, {r0-r3, r7-r12, r13, lr}^
+	 sub sp, #((4+6+1+1)*4)
    stmfd sp!, {r6}
    ldmia r4, {r4-r6}
    stmfd sp!, {r4-r6}
@@ -84,7 +85,8 @@ asm
    cmp ip, sp
    beq .Lreturn
 
-   ldmfd ip!, {r4-r6}^
+   ldmfd ip, {r4-r6}^
+	 add ip, #12
    ldmfd ip!, {r0}
    msr spsr_cxsf, r0
    ldr lr, [ip, #48]
@@ -92,12 +94,14 @@ asm
    subs pc, lr, #4
 
 .Lreturn:
-   ldmfd sp!, {r4-r6}^
+   ldmfd sp, {r4-r6}^
+	 add sp, #12
    ldmfd sp!, {r0}
    msr spsr_cxsf, r0
    ldr lr, [sp, #48]
-   ldmfd sp!, {r0-r3, r7-r12, r13, lr}^
-   add sp, #4
+   ldmfd sp, {r0-r3, r7-r12, r13, lr}^
+	 add sp, #((4+6+1+1+1)*4)
+   //add sp, #4
    subs pc, lr, #4
 end;
 

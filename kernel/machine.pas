@@ -15,6 +15,9 @@ type
    {$ifdef CPUARMV7M}
       {$i armv7m.inc}
    {$endif}
+   {$if defined(CPUARMV6Z)}
+      {$i armv6.inc}
+   {$endif}
    {$ifdef CPUARMV4T}
       {$ifdef RAMONLY}
          {$i armv4t_ram.inc}
@@ -31,6 +34,9 @@ type
 {$ifdef cpuarm}
    {$ifdef CPUARMV7M}
       {$i armv7m.inc}
+   {$endif}
+   {$if defined(CPUARMV6Z)}
+      {$i armv6.inc}
    {$endif}
    {$ifdef CPUARMV4T}
       {$ifdef RAMONLY}
@@ -60,6 +66,9 @@ uses scheduler, platform, debug;
 {$ifdef cpuarm}
    {$ifdef CPUARMV7M}
       {$i armv7m.inc}
+   {$endif}
+   {$if defined(CPUARMV6Z)}
+      {$i armv6.inc}
    {$endif}
    {$ifdef CPUARMV4T}
       {$ifdef RAMONLY}

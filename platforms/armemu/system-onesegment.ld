@@ -68,11 +68,12 @@ SECTIONS
 	/* unintialized data (in same segment as writable data) */
 	. = ALIGN(4);
 	__bss_start = .;
-	.bss : { *(.bss .bss.*) }
-
-   . = ALIGN(0x4000);
-   ARM_MMU_TranslationTable = .;
-   . = ARM_MMU_TranslationTable + 0x4000;
+	.bss :
+	{
+			*(.bss .bss.*)
+			. = ALIGN(0x4000);
+			*(.bss_arm_mmu .bss_arm_mmu.*)
+	}
    
 	. = ALIGN(4); 
 	__bss_end = .;

@@ -2,22 +2,23 @@ unit platform;
 
 interface
 
-uses memmap;
+//uses fontvincent;
 
 const
- MemTop = memmap.MAINMEM_SIZE-4;
+ MemBase = $00008000;
+ MemSize = $08000000-MemBase;
+ 
+ MemTop = MemBase+MemSize;
+ 
+ DebugUart = 2;
 
-function PlatformInterrupt(p: pointer): pointer;
 procedure PlatformIdle;
+function PlatformInterrupt(p: pointer): pointer;
 
 implementation
 
-uses armmmu, config, heap, timer, pic, debug;
-
-procedure DebugPut(c: char);
-begin
-   plongword(DEBUG_STDOUT)^ := ord(c);
-end;
+uses
+	machine, armmmu, config, scheduler, heap, debug;
 
 procedure PlatformIdle;
 begin
@@ -25,11 +26,7 @@ end;
 
 function PlatformInterrupt(p: pointer): pointer;
 begin
-   case PicCurrentInterrupt of
-      INT_PIT: PlatformInterrupt := TimerHandleInterrupt(p);
-   else
-      PlatformInterrupt := p;
-   end;
+   PlatformInterrupt := p;
 end;
 
 procedure UndefinedInstrHandler; public name 'UndefinedInstrHandler';
@@ -61,15 +58,24 @@ begin
    while true do;
 end;
 
+procedure DebugInit;
+begin
+   //debug.DebugOutput := @DebugPut;
+   
+   //sc32442b_uart_setup(DebugUart, 9600, upNone, db8, sb1, [], ufNone);
+end;
+
 procedure MapRam;
 var i: longword;
 begin
-   i := 0;
+   {MapSection($30100000, $0, SectionAccessUserR or SectionRegAttrCached or SectionRegAttrBuffered);
+   
+   i := MemBase;
    while i <= MemTop do
    begin
       MapSection(i, i, SectionAccessUserRW or SectionRegAttrCached or SectionRegAttrBuffered);
       inc(i, 1024*1024);
-   end;
+   end;}
 end;
 
 procedure BootMMUSetup; public name 'mmu_utility';
@@ -81,15 +87,10 @@ var bss_end: record end; external name '__bss_end';
 
 procedure PlatformInit;
 begin
-   debug.DebugOutput := @DebugPut;
-   PicInit;
-   TimerInit;
+   DebugInit;
    
-   debugstr('started'); debugln();
-
-   heap.FreeMem(MainHeap, @bss_end, MemTop-ptruint(@bss_end)-IrqStackSize);
-
-   TimerStart(100);
+   //heap.FreeMem(MainHeap, pointer(MemBase), $100000); // Due to bootloader we are loaded at 0x30100000, so free this for heap manager
+   //heap.FreeMem(MainHeap, @bss_end, MemTop-ptruint(@bss_end)-IrqStackSize);
 end;
 
 initialization

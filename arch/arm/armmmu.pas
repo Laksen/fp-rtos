@@ -34,7 +34,7 @@ asm
    mcr p15, #0, r0, cr1, cr0
 end;
 
-var TranslationTable: array[0..4095] of longword; external name 'ARM_MMU_TranslationTable';
+var TranslationTable: array[0..4095] of longword; section '.bss_arm_mmu';
 
 procedure SetMMU(enabled: boolean);
 begin

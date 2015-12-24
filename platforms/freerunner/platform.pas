@@ -12,6 +12,7 @@ const
  
  DebugUart = 2;
 
+procedure PlatformIdle;
 function PlatformInterrupt(p: pointer): pointer;
 
 implementation
@@ -64,6 +65,10 @@ begin
          dec(y);
       end;
    end;
+end;
+
+procedure PlatformIdle;
+begin
 end;
 
 function PlatformInterrupt(p: pointer): pointer;
