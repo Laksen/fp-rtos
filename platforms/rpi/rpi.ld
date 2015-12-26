@@ -10,12 +10,14 @@ SECTIONS
 {   
 	.text :
    {
-      KEEP(*(.init, .init.*))
+      KEEP(*(.init))
+			KEEP(*(.init.*))
       *(.text .text.* .glue_7* .gnu.linkonce.t.*)
    } >ram
    
    .data :
    {
+		. = ALIGN(4);
       _data = .;
       _gc_start = .;
       *(.gcdata)
