@@ -11,6 +11,7 @@ const
  
  SectionRegAttrCached   = $008;
  SectionRegAttrBuffered = $004;
+ SectionRegAttrSharable = $400;
 
 type
  TMMUCallback = procedure;
@@ -50,7 +51,7 @@ asm
    mcr p15, #0, r0, cr8, cr7, #0
 end;
 
-procedure SetTT(Base: longword); assembler; nostackframe;
+procedure SetTT(Base: pointer); assembler; nostackframe;
 asm
    mcr p15, #0, r0, cr2, cr0, #0
 end;
@@ -85,7 +86,7 @@ begin
    if callback <> nil then
       Callback;
    
-   SetTT(ptruint(@TranslationTable[0]));
+   SetTT(@TranslationTable[0]);
    
    SetDomainAccess(1);
    
