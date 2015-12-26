@@ -90,17 +90,16 @@ begin
 end;
 
 function GetAlignedMem(var Heap: THeapAllocator; Size, Alignment: sizeint): pointer;
-var mem: Pointer;
-    memp: ptruint;
+var mem, memp: Pointer;
 begin
    if (not DataRequiresAlignment) or (alignment <= sizeof(pointer)) then
       GetAlignedMem := GetMem(Heap, size)
    else
    begin
       mem := GetMem(Heap, Size+Alignment-1);
-      memp := align(ptruint(mem), Alignment);
+      memp := align(mem, Alignment);
       Freemem(heap, mem, ptruint(memp)-ptruint(mem));
-      GetAlignedMem := pointer(memp);
+      GetAlignedMem := memp;
    end;
 end;
 

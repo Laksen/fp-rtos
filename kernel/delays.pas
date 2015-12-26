@@ -12,82 +12,83 @@ procedure KernelTick(ms: SizeInt);
 
 implementation
 
-uses scheduler, threads, spinlock, config;
+uses
+  scheduler, threads, spinlock, config;
 
-var SleepList: PThread;
-    SleepListLock: TSpinLock;
-    ticks: longint;
+var
+  SleepList: PThread;
+  SleepListLock: TSpinLock;
+  ticks: longint;
 
 function GetTickCount: longint;
 begin
-   GetTickCount:=ticks;
+  GetTickCount:=ticks;
 end;
 
 procedure Sleep(ms: Longword);
 var t: PThread;
 begin
-   if ms=0 then
-   begin
-      yield;
-      exit;
-   end;
-   
-   t := GetCurrentThread;
+  if ms=0 then
+  begin
+    yield;
+    exit;
+  end;
 
-   DisableScheduling;
-   t^.WaitType := wtTimeout;
-   t^.WaitTime := ms;
+  t := GetCurrentThread;
 
-   SpinWait(SleepListLock);
-   t^.Waitlist := SleepList;
-   SleepList := t;
-   BlockThread(SleepListLock,true);
+  DisableScheduling;
+  t^.WaitType := wtTimeout;
+  t^.WaitTime := ms;
+
+  SpinWait(SleepListLock);
+  t^.Waitlist := SleepList;
+  SleepList := t;
+  BlockThread(SleepListLock,true);
 end;
 
-var Skip: longint;
+var
+  Skip: longint;
 
 procedure KernelTick(ms: SizeInt);
-var prev, t, next: PThread;
-    timeout: sizeint;
+var
+  prev, t, next: PThread;
+  timeout: sizeint;
 begin
-   inc(ticks,ms);
+  inc(ticks,ms);
 
-   if SpinWaitFromISR(SleepListLock) then
-   begin
-      inc(ms,Skip);
-      skip:=0;
-      
-      t := SleepList;
-      prev := nil;
+  if SpinWaitFromISR(SleepListLock) then
+  begin
+    inc(ms,Skip);
+    skip:=0;
 
-      timeout:=0;
-      while assigned(t) and (timeout<MaxThreads) do
+    t := SleepList;
+    prev := nil;
+
+    while assigned(t) do
+    begin
+      next:=t^.Waitlist;
+      if t^.WaitTime <= ms then
       begin
-         inc(timeout);
+        UnblockThread(t^);
 
-         next:=t^.Waitlist;
-         if t^.WaitTime <= ms then
-         begin
-            UnblockThread(t^);
-
-            if not assigned(prev) then
-               SleepList := next
-            else
-               prev^.Waitlist := next;
-         end
-         else
-         begin
-            dec(t^.WaitTime, ms);
-            prev := t;
-         end;
-
-         t := next;
+        if not assigned(prev) then
+          SleepList := next
+        else
+          prev^.Waitlist := next;
+      end
+      else
+      begin
+        dec(t^.WaitTime, ms);
+        prev := t;
       end;
 
-      SpinUnlock(SleepListLock);
-   end
-   else
-      inc(Skip,ms);
+      t := next;
+    end;
+
+    SpinUnlock(SleepListLock);
+  end
+  else
+    inc(Skip,ms);
 end;
 
 end.

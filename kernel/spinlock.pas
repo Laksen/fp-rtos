@@ -20,28 +20,28 @@ const
 
 procedure SpinInit(var Lock: TSpinlock);
 begin
-   Lock := Spinlock_Unlocked;
+  Lock := Spinlock_Unlocked;
 end;
 
 procedure SpinWait(var Lock: TSpinlock);
 begin
-   while AtomicCompareExchange(Lock, Spinlock_Unlocked, Spinlock_Locked) <> Spinlock_Unlocked do;
+  while AtomicCompareExchange(Lock, Spinlock_Unlocked, Spinlock_Locked) <> Spinlock_Unlocked do;
 end;
 
 function SpinWaitFromISR(var Lock: TSpinlock): boolean;
 begin
-   if Lock = Spinlock_Locked then
-      SpinWaitFromISR := false
-   else
-   begin
-      lock := Spinlock_Locked;
-      SpinWaitFromISR := true;
-   end;
+  if Lock = Spinlock_Locked then
+    SpinWaitFromISR := false
+  else
+  begin
+    lock := Spinlock_Locked;
+    SpinWaitFromISR := true;
+  end;
 end;
 
 procedure SpinUnlock(var Lock: TSpinlock);
 begin
-   Lock := Spinlock_Unlocked;
+  Lock := Spinlock_Unlocked;
 end;
 
 end.

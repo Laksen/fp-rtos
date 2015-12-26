@@ -72,7 +72,7 @@ begin
 
    if stack = nil then
    begin
-      stack := Heap.GetAlignedMem(MainHeap, StackSize, 4);
+      stack := Heap.GetAlignedMem(MainHeap, StackSize, sizeof(pointer));
       thread.AllocStack := stack;
    end
    else

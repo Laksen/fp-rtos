@@ -2,18 +2,17 @@ unit config;
 
 interface
 
-uses kernel;
+uses
+  kernel;
 
 const
  ThreadPriorityLevels = 5;
 
- DataRequiresAlignment = false;
+ DataRequiresAlignment = true;
 
- MaxThreads = 32;
-
- IrqStackSize = 0;
- IdleThreadStackSize = 64;
- MainThreadStackSize = 64;
+ IrqStackSize = 256;
+ IdleThreadStackSize = 256;
+ MainThreadStackSize = 256;
  
  HasMainThread = false;
 
