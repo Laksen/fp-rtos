@@ -4,16 +4,18 @@ unit bcm_mem;
 
 interface
 
+function ArmToVc(APtr: pointer): pointer;
+function VcToArm(APtr: pointer): pointer;
+
 procedure MemBarrier;
 
+// These operations can not be run in user mode
+// Clean writes back dirty data, and invalidate marks it as invalid
 procedure InvalidateMem(AAddress: longword);
 procedure CleanCache(AAddress: longword);
 
 procedure CleanMem();
 procedure CleanInvalidateMem();
-
-function ArmToVc(APtr: pointer): pointer;
-function VcToArm(APtr: pointer): pointer;
 
 implementation
 
