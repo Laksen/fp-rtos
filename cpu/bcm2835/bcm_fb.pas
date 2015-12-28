@@ -2,6 +2,11 @@ unit bcm_fb;
 
 interface
 
+var
+  FBPointer: PWord;
+  W,H,
+  x,y: longint;
+
 function SetupFB(AWidth, AHeight: longint): longint;
 
 implementation
@@ -20,11 +25,6 @@ type
     X,Y,
     Base,  Size: longword
   end;
-
-var
-  FBPointer: PWord;
-  W,H,
-  x,y: longint;
 
 const
   FB = 1;
@@ -74,8 +74,9 @@ function SetupFB(AWidth, AHeight: longint): longint;
 var
   BufferSetup: ^TBCMFramebuffer;
   res: LongWord;
+  bufferObj: pointer;
 begin
-  BufferSetup:=heap.GetAlignedMem(MainHeap, sizeof(TBCMFramebuffer), 16);
+  BufferSetup:=heap.GetAlignedMem(MainHeap, sizeof(TBCMFramebuffer), 16, bufferObj);
 
   w:=AWidth;
   h:=AHeight;
@@ -99,7 +100,7 @@ begin
 
   if res<>0 then
     begin
-      FreeMem(MainHeap, BufferSetup);
+      FreeMem(MainHeap, bufferObj);
       exit(2);
     end;
 
@@ -107,7 +108,7 @@ begin
 
   if BufferSetup^.Base=0 then
     begin
-      FreeMem(MainHeap, BufferSetup);
+      FreeMem(MainHeap, bufferObj);
       exit(1);
     end;
 
@@ -115,7 +116,7 @@ begin
 
   FBPointer:=VcToArm(pointer(BufferSetup^.Base));
 
-  FreeMem(MainHeap, BufferSetup);
+  FreeMem(MainHeap, bufferObj);
 
   SetupFB:=0;
 end;

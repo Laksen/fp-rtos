@@ -6,7 +6,7 @@ interface
 
 const
  MemBase = $00008000;
- MemSize = $00100000*64-MemBase;
+ MemSize = $10000000-MemBase;
  
  MemTop = MemBase+MemSize;
  
@@ -30,8 +30,18 @@ asm
 end;
 
 procedure UndefinedInstrHandler; public name 'UndefinedInstrHandler';
+var
+  tlr: LongWord;
 begin
-  debugstr('UndefinedInstrHandler'); debugln();
+  asm
+    str lr, tlr
+  end;
+
+  debugstr('UndefinedInstrHandler: '); debughex(tlr); debugln();
+  debugstr('Thread: '); debughex(PtrUInt(CurrentThread)); debugln;
+  debugstr('Context: '); debughex(ptruint(CurrentThread^.MachineContext)); debugln;
+  debugstr('  - LR:  '); debughex(PContext(CurrentThread^.MachineContext)^.lr); debugln;
+  debugstr('  - PC:  '); debughex(PContext(CurrentThread^.MachineContext)^.pc); debugln;
   while true do;
 end;
 procedure SWIHandler; public name 'SWIHandler';
@@ -156,7 +166,7 @@ begin
   SetHandler(6, @IRQHandler);
   SetHandler(7, @FIQHandler);
 
-  SetHandler(1, @blink2);
+  //SetHandler(1, @blink2);
   SetHandler(2, @blink3);
   SetHandler(3, @blink4);
   SetHandler(4, @blink5);
