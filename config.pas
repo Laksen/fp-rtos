@@ -10,9 +10,9 @@ const
 
  DataRequiresAlignment = true;
 
- IrqStackSize = 256;
- IdleThreadStackSize = 256;
- MainThreadStackSize = 256;
+ IrqStackSize = 1024;
+ IdleThreadStackSize = 1024;
+ MainThreadStackSize = 1024;
  
  HasMainThread = false;
 

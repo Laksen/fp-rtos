@@ -117,8 +117,6 @@ begin
     end
     else
       Schedule := s;
-
-    //debugstr('Scheduling '); if new <> nil then DebugHex(getpc(new^.machinecontext)); debugstr(' MC '); if old <> nil then DebugHex(getpc(old^.machinecontext)); debugln;
   end
   else
     Schedule := s;
@@ -172,7 +170,7 @@ begin
   EnqueueThread(t);
 end;
 
-procedure ThreadIdle(p: pointer);
+procedure ThreadIdle(p: pointer); noreturn;
 begin
   while true do PlatformIdle;
 end;

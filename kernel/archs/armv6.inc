@@ -88,9 +88,6 @@ end;
 
 procedure mainfunc; external name 'PASCALMAIN';
 
-var
-  irqsave: array[0..2] of longword;
-
 procedure haltproc; assembler; nostackframe; [public, alias: '_haltproc'];
 asm
 .Lloop:
@@ -138,7 +135,7 @@ asm
 
   orr r1, r4, #0x12 // IRQ
   msr cpsr_c, r1
-  ldr sp, .Lirqsave
+  mov sp, r2
 
   orr r1, r4, #0x11 // FIQ
   msr cpsr_c, r1
@@ -160,8 +157,6 @@ asm
   .long __bss_start
 .Lbss_end:
   .long __bss_end
-.Lirqsave:
-  .long irqsave
 .Lmainstack:
   .long mainThreadStack+MainThreadStackSize
 .LMemTop:

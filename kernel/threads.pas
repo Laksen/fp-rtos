@@ -59,6 +59,8 @@ uses heap, scheduler, machine;
 var ThreadCounter: sizeint;
 
 procedure CreateThread(var Thread: TThread; Priority: TThreadPriority; EntryPoint: TThreadProc; Parameter: Pointer; Stack: pointer; StackSize: sizeint; StartActive: boolean);
+var
+  stackOrig: pointer;
 begin
    Thread.ThreadID := ThreadCounter; inc(ThreadCounter);
    Thread.State := tsSuspended;
@@ -72,8 +74,8 @@ begin
 
    if stack = nil then
    begin
-      stack := Heap.GetAlignedMem(MainHeap, StackSize, sizeof(pointer));
-      thread.AllocStack := stack;
+      stack := Heap.GetAlignedMem(MainHeap, StackSize, sizeof(pointer), stackOrig);
+      thread.AllocStack := stackOrig;
    end
    else
       thread.AllocStack := nil;

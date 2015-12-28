@@ -22,7 +22,7 @@ procedure CreateHeap(var Heap: THeapAllocator);
 procedure DestroyHeap(var Heap: THeapAllocator);
 
 function GetMem(var Heap: THeapAllocator; Size: sizeint): pointer;
-function GetAlignedMem(var Heap: THeapAllocator; Size, Alignment: sizeint): pointer;
+function GetAlignedMem(var Heap: THeapAllocator; Size, Alignment: sizeint; var OriginalBlock: pointer): pointer;
 procedure FreeMem(var Heap: THeapAllocator; Addr: Pointer);
 procedure FreeMem(var Heap: THeapAllocator; Addr: Pointer; Size: sizeint);
 
@@ -89,18 +89,22 @@ begin
       GetMem := nil;
 end;
 
-function GetAlignedMem(var Heap: THeapAllocator; Size, Alignment: sizeint): pointer;
-var mem, memp: Pointer;
+function GetAlignedMem(var Heap: THeapAllocator; Size, Alignment: sizeint; var OriginalBlock: pointer): pointer;
+var
+  mem, memp: Pointer;
 begin
-   if (not DataRequiresAlignment) or (alignment <= sizeof(pointer)) then
-      GetAlignedMem := GetMem(Heap, size)
-   else
-   begin
-      mem := GetMem(Heap, Size+Alignment-1);
-      memp := align(mem, Alignment);
-      Freemem(heap, mem, ptruint(memp)-ptruint(mem));
-      GetAlignedMem := memp;
-   end;
+  if (not DataRequiresAlignment) or (alignment <= sizeof(pointer)) then
+  begin
+    GetAlignedMem := GetMem(Heap, size);
+    OriginalBlock:=GetAlignedMem;
+  end
+  else
+  begin
+    mem := GetMem(Heap, Size+Alignment-1);
+    memp := align(mem, Alignment);
+    OriginalBlock := mem;
+    GetAlignedMem := memp;
+  end;
 end;
 
 procedure FreeMem(var Heap: THeapAllocator; Addr: Pointer);

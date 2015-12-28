@@ -14,6 +14,8 @@ procedure DebugLn;
 procedure DebugChar(ch: char);
 procedure DebugInt(v: longint);
 procedure DebugHex(v: longword);
+procedure DebugHexWord(v: word);
+procedure DebugHexChar(v: byte);
 
 implementation
 
@@ -76,6 +78,38 @@ begin
    if DebugOutput = nil then exit;
 
    for i := 7 downto 0 do
+   begin
+      t := (v shr (i*4)) and $F;
+
+      if t > 9 then
+         DebugOutput(char(byte('A')+t-10))
+      else
+         DebugOutput(char(byte('0')+t));
+   end;
+end;
+
+procedure DebugHexWord(v: word);
+var i,t: longint;
+begin
+   if DebugOutput = nil then exit;
+
+   for i := 3 downto 0 do
+   begin
+      t := (v shr (i*4)) and $F;
+
+      if t > 9 then
+         DebugOutput(char(byte('A')+t-10))
+      else
+         DebugOutput(char(byte('0')+t));
+   end;
+end;
+
+procedure DebugHexChar(v: byte);
+var i,t: longint;
+begin
+   if DebugOutput = nil then exit;
+
+   for i := 1 downto 0 do
    begin
       t := (v shr (i*4)) and $F;
 
