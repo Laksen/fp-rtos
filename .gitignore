@@ -1,0 +1,7 @@
+*.bak
+*.lps
+*.bin
+*.elf
+*.hex
+lib/
+*.img
