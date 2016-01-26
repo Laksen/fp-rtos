@@ -7,7 +7,7 @@
 {$endif}
 
 {$ifdef interface}
-var mainThreadStack: array[0..MainThreadStackSize div 4-1] of longword;
+var mainThreadStack: array[0..(MainThreadStackSize div 4)-1] of longword;
 {$endif}
 
 {$ifdef implementation}
@@ -27,8 +27,6 @@ begin
    sp^.lr := ptruint(thread.entry)+4;
    sp^.ulr := ptruint(@ThreadExit);
    sp^.sp := ptruint(Thread.MachineContext);
-   
-   //debugstr('Thread: '); debughex(ptruint(sp)); debugstr(' '); debughex(ptruint(sp^.ulr)); debugstr(' '); debughex(ptruint(sp^.lr)); debugln();
 
    thread.machineContext := sp;
 end;
@@ -71,7 +69,7 @@ begin
    GetPC := ptruint(PContext(context)^.lr)-4;
 end;
 
-procedure IrqHandler; assembler; nostackframe; [public, alias: 'IrqHandler'];
+procedure LLIrqHandler; assembler; nostackframe; [public, alias: 'IRQHandler'];
 asm
    stmia r13, {r4-r6}
    mov r4, r13
@@ -141,6 +139,7 @@ procedure SWIHandler; external name 'SWIHandler';
 procedure PrefetchAbortHandler; external name 'PrefetchAbortHandler';
 procedure DataAbortHandler; external name 'DataAbortHandler';
 procedure FIQHandler; external name 'FIQHandler';
+procedure IRQHandler; external name 'IRQHandler';
   
 procedure DefaultExceptionHandler; assembler; nostackframe;
 asm
@@ -157,7 +156,7 @@ asm
    ldr pc, .LSWI_Addr        // Software Interrupt vector
    ldr pc, .LPrefetch_Addr   // Prefetch abort vector
    ldr pc, .LAbort_Addr      // Data abort vector
-   nop                   // reserved
+   nop                       // reserved
    ldr pc, .LIRQ_Addr        // Interrupt Request (IRQ) vector
    ldr pc, .LFIQ_Addr        // Fast interrupt request (FIQ) vector
 

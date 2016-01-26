@@ -10,6 +10,7 @@ type
 var DebugOutput: TDebugOutProc = nil;
 
 procedure DebugStr(const s: shortstring);
+procedure DebugLn(const s: shortstring);
 procedure DebugLn;
 procedure DebugChar(ch: char);
 procedure DebugInt(v: longint);
@@ -32,6 +33,12 @@ begin
 
    for i := 1 to length(s) do
       DebugOutput(s[i]);
+end;
+
+procedure DebugLn(const s: shortstring);
+begin
+  debugstr(s);
+  debugln;
 end;
 
 procedure DebugLn;

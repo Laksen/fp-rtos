@@ -21,14 +21,19 @@ var
 procedure CreateHeap(var Heap: THeapAllocator);
 procedure DestroyHeap(var Heap: THeapAllocator);
 
+procedure RegMem(var Heap: THeapAllocator; Addr: Pointer; Size: sizeint);
+
 function GetMem(var Heap: THeapAllocator; Size: sizeint): pointer;
 function GetAlignedMem(var Heap: THeapAllocator; Size, Alignment: sizeint; var OriginalBlock: pointer): pointer;
 procedure FreeMem(var Heap: THeapAllocator; Addr: Pointer);
 procedure FreeMem(var Heap: THeapAllocator; Addr: Pointer; Size: sizeint);
 
+procedure ReportStatus(var Heap: THeapAllocator);
+
 implementation
 
-uses config;
+uses
+  config, debug, heapmgr;
 
 const
  MinBlock = 16;
@@ -48,11 +53,53 @@ begin
 
 end;
 
+procedure RegMem(var Heap: THeapAllocator; Addr: Pointer; Size: sizeint);
+var b, p, prev: PHeapBlock;
+begin
+   RegisterHeapBlock(addr, size);
+   exit;
+
+   b := addr;
+
+   b^.Next := heap.Blocks;
+   b^.Size := Size;
+
+   inc(heap.TotalSize, size);
+
+   if Heap.Blocks = nil then
+      Heap.Blocks := b
+   else
+   begin
+      p := Heap.Blocks;
+      prev := nil;
+
+      while assigned(p) and (p^.Size < size) do
+      begin
+         prev := p;
+         p := p^.Next;
+      end;
+
+      if assigned(prev) then
+      begin
+         b^.Next := p;
+         prev^.Next := b;
+      end
+      else
+         heap.Blocks := b;
+   end;
+end;
+
 function GetMem(var Heap: THeapAllocator; Size: sizeint): pointer;
 var p, prev: PHeapBlock;
     AllocSize, RestSize: sizeint;
 begin
+   getmem:=system.Getmem(size);
+   exit;
+
    AllocSize := align(size+sizeof(sizeint), sizeof(pointer));
+
+   debughex(size);
+   ReportStatus(Heap);
 
    p := heap.Blocks;
    prev := nil;
@@ -110,6 +157,9 @@ end;
 procedure FreeMem(var Heap: THeapAllocator; Addr: Pointer);
 var sz: SizeInt;
 begin
+  system.Freemem(addr);
+  exit;
+
    sz := FindSize(addr)+SizeOf(sizeint);
 
    FreeMem(heap, @psizeint(addr)[-1], sz);
@@ -118,6 +168,9 @@ end;
 procedure FreeMem(var Heap: THeapAllocator; Addr: Pointer; Size: sizeint);
 var b, p, prev: PHeapBlock;
 begin
+  system.Freemem(addr);
+  exit;
+
    b := addr;
 
    b^.Next := heap.Blocks;
@@ -146,6 +199,11 @@ begin
       else
          heap.Blocks := b;
    end;
+end;
+
+procedure ReportStatus(var Heap: THeapAllocator);
+begin
+  debugstr('['); DebugHex(Heap.Allocated); debugstr('/'); debughex(heap.TotalSize); debugln(']');
 end;
 
 end.
